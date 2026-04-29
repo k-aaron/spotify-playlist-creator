@@ -330,9 +330,41 @@ async function startAuth() {
   const v=genVer(), c=await genChall(v);
   localStorage.setItem(LS.VER,v);
   const p=new URLSearchParams({client_id:cid,response_type:'code',redirect_uri:ru,code_challenge_method:'S256',code_challenge:c,scope:SCOPES.join(' '),show_dialog:'true'});
-  st('auth-status','Spotify 승인 창이 열립니다. 승인 후 리다이렉트된 URL을 아래에 붙여넣어주세요.','info');
-  g('code-card').style.display='block';
-  setTimeout(()=>window.open('https://accounts.spotify.com/authorize?'+p,'_blank'),300);
+  st('auth-status','Spotify 승인 페이지로 이동합니다...','info');
+  window.location.href='https://accounts.spotify.com/authorize?'+p;
+}
+
+async function checkAuthCallback() {
+  const params=new URLSearchParams(window.location.search);
+  const code=params.get('code'), error=params.get('error');
+  if(error){
+    g('auth-section').classList.add('on');
+    st('auth-status','Spotify 인증 오류: '+error,'error');
+    window.history.replaceState({},'',window.location.pathname);
+    return;
+  }
+  if(!code) return;
+  const cid=localStorage.getItem(LS.CID),cs=localStorage.getItem(LS.CS),ru=localStorage.getItem(LS.RU),v=localStorage.getItem(LS.VER);
+  g('auth-section').classList.add('on');
+  loadSaved();
+  window.history.replaceState({},'',window.location.pathname);
+  if(!cid||!v){st('auth-status','저장된 인증 정보가 없어요. 다시 시도해주세요.','error');return;}
+  st('auth-status','토큰 교환 중...','info');
+  try {
+    const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','Authorization':'Basic '+btoa(cid+':'+cs)},body:new URLSearchParams({grant_type:'authorization_code',code,redirect_uri:ru,client_id:cid,code_verifier:v})});
+    const d=await r.json();
+    if(d.access_token){
+      token=d.access_token;
+      const sc=(d.scope||'').split(' '),miss=SCOPES.filter(s=>!sc.includes(s));
+      if(miss.length){st('auth-status','필요한 권한 없음: '+miss.join(', '),'error');return;}
+      const me=await api('/me');
+      st('auth-status','연결 성공! 안녕하세요, '+(me.display_name||me.id)+'님.','success');
+      loadPlaylists();
+      setTimeout(()=>{g('auth-section').classList.remove('on');g('main-section').classList.add('on');},1000);
+    } else {
+      st('auth-status','토큰 오류: '+(d.error_description||JSON.stringify(d)),'error');
+    }
+  } catch(e){st('auth-status','오류: '+e.message,'error');}
 }
 
 async function handleRedirect() {
@@ -371,7 +403,7 @@ async function loadPlaylists() {
     let url='/me/playlists?limit=20', items=[];
     while(url){const d=await api(url.startsWith('http')?url.replace('https://api.spotify.com/v1',''):url);items=[...items,...(d.items||[])];url=d.next?d.next.replace('https://api.spotify.com/v1',''):null;}
     const sel=g('pl-select');
-    sel.innerHTML='<option value="">— 플레이리스트를 선택하세요 —</option>'+items.map(p=>`<option value="${p.id}">${esc(p.name)} (${p.tracks.total}곡)</option>`).join('');
+    sel.innerHTML='<option value="">— 플레이리스트를 선택하세요 —</option>'+items.map(p=>`<option value="${p.id}">${esc(p.name)} (${p.tracks?.total??0}곡)</option>`).join('');
   } catch(e){g('pl-select').innerHTML='<option>불러오기 실패</option>';}
 }
 
@@ -605,7 +637,9 @@ function g(id){return document.getElementById(id);}
 
 initTheme();
 loadSaved();
-g('auth-section').classList.add('on');
+const _urlParams=new URLSearchParams(window.location.search);
+if(_urlParams.get('code')||_urlParams.get('error')){checkAuthCallback();}
+else{g('auth-section').classList.add('on');}
 </script>
 </body>
 </html>
