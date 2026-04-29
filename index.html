@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Spotify Playlist Creator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f5f4f0;
+  --bg-card: #ffffff;
+  --bg-input: #f0efe9;
+  --bg-input-focus: #ffffff;
+  --bg-sub: #f0efe9;
+  --border: #e2e0d8;
+  --text: #111110;
+  --text-muted: #787570;
+  --text-faint: #a8a49e;
+  --accent: #1DB954;
+  --accent-hover: #18a348;
+  --accent-text: #000;
+  --danger: #e05260;
+  --warning-color: #f59e0b;
+  --track-border: #ece9e0;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  --radius: 14px;
+  --radius-sm: 8px;
+  --radius-pill: 100px;
+  --tr: 0.18s ease;
+}
+[data-theme="dark"] {
+  --bg: #111111;
+  --bg-card: #181818;
+  --bg-input: #242424;
+  --bg-input-focus: #2c2c2c;
+  --bg-sub: #1c1c1c;
+  --border: #2e2e2e;
+  --text: #f0eeea;
+  --text-muted: #a8a49e;
+  --text-faint: #4e4a44;
+  --accent: #1DB954;
+  --accent-hover: #22d160;
+  --accent-text: #000;
+  --danger: #e05260;
+  --warning-color: #f59e0b;
+  --track-border: #242424;
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.4), 0 4px 16px rgba(0,0,0,0.3);
+}
+
+body {
+  font-family: 'DM Sans', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 32px 16px 80px;
+  transition: background var(--tr), color var(--tr);
+}
+.app { max-width: 580px; margin: 0 auto; }
+
+/* Header */
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+.header-left { display: flex; align-items: center; gap: 12px; }
+.logo { width: 40px; height: 40px; background: var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.logo svg { width: 22px; height: 22px; fill: #000; }
+.header-text h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+.header-text p { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+
+.theme-btn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border); background: var(--bg-card); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: all var(--tr); }
+.theme-btn:hover { border-color: var(--accent); color: var(--accent); }
+.theme-btn svg { width: 17px; height: 17px; }
+.icon-sun { display: none; }
+[data-theme="dark"] .icon-sun { display: block; }
+[data-theme="dark"] .icon-moon { display: none; }
+
+/* Card */
+.card { background: var(--bg-card); border-radius: var(--radius); border: 1px solid var(--border); padding: 24px; margin-bottom: 14px; box-shadow: var(--shadow-card); transition: background var(--tr), border-color var(--tr); }
+.card-title { font-size: 10px; font-weight: 600; color: var(--text-faint); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 18px; font-family: 'DM Mono', monospace; }
+
+/* Tabs */
+.tabs { display: flex; background: var(--bg-sub); border-radius: var(--radius-pill); padding: 3px; margin-bottom: 22px; border: 1px solid var(--border); gap: 2px; }
+.tab-btn { flex: 1; padding: 9px 12px; border: none; background: transparent; color: var(--text-muted); font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; border-radius: var(--radius-pill); cursor: pointer; transition: all var(--tr); }
+.tab-btn.active { background: var(--bg-card); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+
+/* Form */
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.07em; text-transform: uppercase; margin-bottom: 6px; font-family: 'DM Mono', monospace; }
+.field input, .field textarea, .field select { width: 100%; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 13px; font-size: 14px; color: var(--text); font-family: 'DM Sans', sans-serif; transition: all var(--tr); outline: none; appearance: none; -webkit-appearance: none; }
+.field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); background: var(--bg-input-focus); }
+.field input::placeholder, .field textarea::placeholder { color: var(--text-faint); }
+.field textarea { resize: vertical; min-height: 180px; line-height: 1.65; font-family: 'DM Mono', monospace; font-size: 13px; }
+.field select { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23787570' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field-hint { font-size: 11px; color: var(--text-faint); margin-top: 5px; }
+.field-hint em { color: var(--accent); font-style: normal; }
+
+/* Buttons */
+.btn-green { width: 100%; background: var(--accent); color: var(--accent-text); border: none; border-radius: var(--radius-pill); padding: 12px 20px; font-size: 14px; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; letter-spacing: 0.02em; transition: all var(--tr); margin-top: 6px; }
+.btn-green:hover { background: var(--accent-hover); transform: translateY(-1px); }
+.btn-green:active { transform: scale(0.99); }
+.btn-green:disabled { background: var(--border); color: var(--text-faint); cursor: not-allowed; transform: none; }
+.btn-outline { width: 100%; background: transparent; color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--radius-pill); padding: 11px 20px; font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all var(--tr); margin-top: 8px; }
+.btn-outline:hover { border-color: var(--text); color: var(--text); }
+.btn-danger { width: 100%; background: transparent; color: var(--danger); border: 1px solid var(--danger); border-radius: var(--radius-pill); padding: 11px 20px; font-size: 14px; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all var(--tr); margin-top: 6px; }
+.btn-danger:hover { background: var(--danger); color: #fff; }
+.btn-danger:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Action buttons */
+.action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+.action-btn { padding: 11px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-sub); color: var(--text-muted); font-size: 13px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all var(--tr); }
+.action-btn:hover { border-color: var(--accent); color: var(--accent); }
+.action-btn.sel-add { border-color: var(--accent); color: var(--accent); background: var(--bg-card); }
+.action-btn.sel-dedup { border-color: var(--danger); color: var(--danger); background: var(--bg-card); }
+
+/* Status */
+.status { border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; line-height: 1.55; margin-top: 12px; border: 1px solid; }
+.status.info { background: rgba(59,130,246,0.07); color: #3b82f6; border-color: rgba(59,130,246,0.2); }
+.status.success { background: rgba(29,185,84,0.07); color: var(--accent); border-color: rgba(29,185,84,0.2); }
+.status.error { background: rgba(224,82,96,0.07); color: var(--danger); border-color: rgba(224,82,96,0.2); }
+.status.warning { background: rgba(245,158,11,0.07); color: var(--warning-color); border-color: rgba(245,158,11,0.2); }
+
+/* Progress */
+.progress-wrap { margin: 16px 0 6px; }
+.progress-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-faint); font-family: 'DM Mono', monospace; margin-bottom: 7px; }
+.progress-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s ease; width: 0%; }
+
+/* Track rows */
+.section-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); font-family: 'DM Mono', monospace; margin: 14px 0 8px; }
+.section-label.ok { color: var(--accent); }
+.section-label.fail { color: var(--danger); }
+.track-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--track-border); }
+.track-row:last-child { border-bottom: none; }
+.track-num { font-size: 12px; color: var(--text-faint); width: 20px; text-align: right; flex-shrink: 0; font-family: 'DM Mono', monospace; }
+.track-info { flex: 1; min-width: 0; }
+.track-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.track-sub.err { color: var(--danger); }
+.track-badge { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+.track-badge.ok { background: var(--accent); color: #000; }
+.track-badge.fail { background: var(--danger); color: #fff; }
+.divider { height: 1px; background: var(--border); margin: 10px 0; }
+
+/* Dup preview */
+.dup-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--track-border); }
+.dup-item:last-child { border-bottom: none; }
+.dup-badge { font-size: 10px; font-weight: 600; font-family: 'DM Mono', monospace; background: rgba(224,82,96,0.1); color: var(--danger); border: 1px solid rgba(224,82,96,0.25); border-radius: 4px; padding: 2px 7px; flex-shrink: 0; white-space: nowrap; }
+
+/* Spotify link */
+.spotify-link { display: inline-flex; align-items: center; gap: 8px; background: var(--accent); color: #000; text-decoration: none; border-radius: var(--radius-pill); padding: 11px 20px; font-size: 13px; font-weight: 700; margin-top: 16px; transition: all var(--tr); }
+.spotify-link:hover { background: var(--accent-hover); transform: translateY(-1px); }
+.spotify-link svg { width: 16px; height: 16px; fill: #000; }
+
+/* Failed list */
+.failed-list { margin-top: 8px; padding-left: 16px; }
+.failed-list li { font-size: 13px; color: var(--warning-color); margin-top: 5px; line-height: 1.4; }
+
+/* Visibility helpers */
+#auth-section, #main-section { display: none; }
+#auth-section.on, #main-section.on { display: block; }
+.tab-pane { display: none; }
+.tab-pane.on { display: block; }
+.action-pane { display: none; margin-top: 16px; }
+.action-pane.on { display: block; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.623.623 0 01-.857.207c-2.348-1.435-5.304-1.76-8.785-.963a.623.623 0 11-.277-1.215c3.809-.87 7.076-.496 9.712 1.115a.623.623 0 01.207.856zm1.223-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 01-.973-.519.781.781 0 01.52-.972c3.632-1.102 8.147-.568 11.233 1.328a.78.78 0 01.257 1.072zm.105-2.835C14.692 8.95 9.375 8.775 6.297 9.71a.937.937 0 11-.543-1.793c3.514-1.066 9.35-.859 13.032 1.328a.937.937 0 01-.972 1.622z"/></svg>
+      </div>
+      <div class="header-text">
+        <h1>Playlist Creator</h1>
+        <p>Spotify 플레이리스트 자동 생성</p>
+      </div>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()" title="테마 전환">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+  </div>
+
+  <!-- STEP 1: 설정 -->
+  <div id="auth-section">
+    <div class="card">
+      <div class="card-title">Spotify 앱 설정</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Client ID</label>
+          <input type="text" id="client-id" placeholder="your_client_id" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label>Client Secret</label>
+          <input type="password" id="client-secret" placeholder="your_client_secret" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Redirect URI</label>
+        <input type="text" id="redirect-uri" placeholder="https://your-name.github.io/your-repo/" />
+        <div class="field-hint">입력값은 브라우저에 <em>자동 저장</em>됩니다.</div>
+      </div>
+      <button class="btn-green" onclick="startAuth()">Connect with Spotify</button>
+      <div id="auth-status"></div>
+    </div>
+    <div class="card" id="code-card" style="display:none;">
+      <div class="card-title">승인 완료 후 URL 입력</div>
+      <div class="field">
+        <label>리다이렉트된 URL</label>
+        <input type="text" id="redirect-url" placeholder="https://your-site.com/?code=AQ..." />
+      </div>
+      <button class="btn-green" onclick="handleRedirect()">토큰 받기</button>
+      <div id="token-status"></div>
+    </div>
+  </div>
+
+  <!-- STEP 2: 메인 -->
+  <div id="main-section">
+    <div class="card">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('new')">새 플레이리스트</button>
+        <button class="tab-btn" onclick="switchTab('existing')">기존 플레이리스트</button>
+      </div>
+
+      <!-- 새 플레이리스트 -->
+      <div id="tab-new" class="tab-pane on">
+        <div class="field">
+          <label>플레이리스트 이름</label>
+          <input type="text" id="new-name" placeholder="예: SwingJazz 140-159" />
+        </div>
+        <div class="field">
+          <label>곡 목록 — <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-faint);font-family:'DM Sans',sans-serif;">곡명 - 아티스트 형식 권장</span></label>
+          <textarea id="new-tracks" placeholder="거짓말 - 빅뱅&#10;Nobody - 원더걸스&#10;Sorry Sorry - 슈퍼주니어"></textarea>
+        </div>
+        <button class="btn-green" id="btn-new" onclick="createNew()">플레이리스트 생성</button>
+        <div id="new-status"></div>
+      </div>
+
+      <!-- 기존 플레이리스트 -->
+      <div id="tab-existing" class="tab-pane">
+        <div class="field">
+          <label>플레이리스트 선택</label>
+          <select id="pl-select"><option value="">— 불러오는 중... —</option></select>
+        </div>
+        <div class="action-btns">
+          <button class="action-btn" id="btn-act-add" onclick="selectAction('add')">+ 곡 추가</button>
+          <button class="action-btn" id="btn-act-dedup" onclick="selectAction('dedup')">중복 제거</button>
+        </div>
+
+        <!-- 곡 추가 -->
+        <div id="pane-add" class="action-pane">
+          <div class="field" style="margin-top:0;">
+            <label>곡 목록 — <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-faint);font-family:'DM Sans',sans-serif;">곡명 - 아티스트 형식 권장</span></label>
+            <textarea id="add-tracks" placeholder="거짓말 - 빅뱅&#10;Nobody - 원더걸스"></textarea>
+          </div>
+          <button class="btn-green" id="btn-add" onclick="addToExisting()">곡 추가하기</button>
+          <div id="add-status"></div>
+        </div>
+
+        <!-- 중복 제거 -->
+        <div id="pane-dedup" class="action-pane">
+          <button class="btn-danger" id="btn-scan" onclick="scanDups()">중복 곡 스캔</button>
+          <div id="dedup-status"></div>
+          <div id="dedup-preview"></div>
+          <button class="btn-danger" id="btn-exec" style="display:none;" onclick="execDedup()">중복 제거 실행</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 결과 -->
+    <div class="card" id="results-card" style="display:none;">
+      <div class="card-title" id="results-title">결과</div>
+      <div class="progress-wrap">
+        <div class="progress-meta"><span id="prog-text">처리 중...</span><span id="prog-pct">0%</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="prog-fill"></div></div>
+      </div>
+      <div id="track-results"></div>
+      <div id="failed-summary"></div>
+      <div id="result-link"></div>
+      <div id="reset-wrap" style="display:none;">
+        <button class="btn-outline" onclick="resetResults()">다시하기</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+const LS = { CID:'sp_cid', CS:'sp_cs', RU:'sp_ru', VER:'sp_ver', THEME:'sp_theme' };
+const SCOPES = ['playlist-modify-public','playlist-modify-private','playlist-read-private','playlist-read-collaborative'];
+let token = null;
+let dupList = [];
+let currentAction = null;
+
+/* Theme */
+function initTheme() {
+  const t = localStorage.getItem(LS.THEME) || 'light';
+  document.documentElement.setAttribute('data-theme', t);
+}
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const nxt = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', nxt);
+  localStorage.setItem(LS.THEME, nxt);
+}
+
+/* Saved credentials */
+function loadSaved() {
+  const s = (k,id) => { const v=localStorage.getItem(k); if(v) document.getElementById(id).value=v; };
+  s(LS.CID,'client-id'); s(LS.CS,'client-secret'); s(LS.RU,'redirect-uri');
+}
+
+/* PKCE */
+function genVer() {
+  const a=new Uint8Array(64); crypto.getRandomValues(a);
+  return btoa(String.fromCharCode(...a)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+async function genChall(v) {
+  const h=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v));
+  return btoa(String.fromCharCode(...new Uint8Array(h))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+}
+
+/* Auth */
+async function startAuth() {
+  const cid=g('client-id').value.trim(), cs=g('client-secret').value.trim(), ru=g('redirect-uri').value.trim();
+  if(!cid||!cs||!ru){st('auth-status','Client ID, Client Secret, Redirect URI를 모두 입력해주세요.','error');return;}
+  localStorage.setItem(LS.CID,cid); localStorage.setItem(LS.CS,cs); localStorage.setItem(LS.RU,ru);
+  const v=genVer(), c=await genChall(v);
+  localStorage.setItem(LS.VER,v);
+  const p=new URLSearchParams({client_id:cid,response_type:'code',redirect_uri:ru,code_challenge_method:'S256',code_challenge:c,scope:SCOPES.join(' '),show_dialog:'true'});
+  st('auth-status','Spotify 승인 창이 열립니다. 승인 후 리다이렉트된 URL을 아래에 붙여넣어주세요.','info');
+  g('code-card').style.display='block';
+  setTimeout(()=>window.open('https://accounts.spotify.com/authorize?'+p,'_blank'),300);
+}
+
+async function handleRedirect() {
+  const url=g('redirect-url').value.trim();
+  let code; try{code=new URL(url).searchParams.get('code');}catch(e){}
+  if(!code){st('token-status','URL에서 code를 찾을 수 없어요.','error');return;}
+  const cid=localStorage.getItem(LS.CID),cs=localStorage.getItem(LS.CS),ru=g('redirect-uri').value.trim(),v=localStorage.getItem(LS.VER);
+  st('token-status','토큰 교환 중...','info');
+  try {
+    const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','Authorization':'Basic '+btoa(cid+':'+cs)},body:new URLSearchParams({grant_type:'authorization_code',code,redirect_uri:ru,client_id:cid,code_verifier:v})});
+    const d=await r.json();
+    if(d.access_token){
+      token=d.access_token;
+      const sc=(d.scope||'').split(' '), miss=SCOPES.filter(s=>!sc.includes(s));
+      if(miss.length){st('token-status','필요한 권한 없음: '+miss.join(', '),'error');return;}
+      const me=await api('/me');
+      st('token-status','연결 성공! 안녕하세요, '+(me.display_name||me.id)+'님.','success');
+      loadPlaylists();
+      setTimeout(()=>{g('auth-section').classList.remove('on');g('main-section').classList.add('on');},1000);
+    } else {
+      st('token-status','토큰 오류: '+(d.error_description||JSON.stringify(d)),'error');
+    }
+  } catch(e){st('token-status','오류: '+e.message,'error');}
+}
+
+/* API */
+async function api(path,opts={}) {
+  const r=await fetch('https://api.spotify.com/v1'+path,{...opts,headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json',...(opts.headers||{})}});
+  if(r.status===204||r.status===201) return r.status===201?r.json():null;
+  return r.json();
+}
+
+/* Load playlists */
+async function loadPlaylists() {
+  try {
+    let url='/me/playlists?limit=20', items=[];
+    while(url){const d=await api(url.startsWith('http')?url.replace('https://api.spotify.com/v1',''):url);items=[...items,...(d.items||[])];url=d.next?d.next.replace('https://api.spotify.com/v1',''):null;}
+    const sel=g('pl-select');
+    sel.innerHTML='<option value="">— 플레이리스트를 선택하세요 —</option>'+items.map(p=>`<option value="${p.id}">${esc(p.name)} (${p.tracks.total}곡)</option>`).join('');
+  } catch(e){g('pl-select').innerHTML='<option>불러오기 실패</option>';}
+}
+
+/* Artist name resolution (한글 ↔ 영문) */
+async function resolveArtist(name) {
+  const names=[name];
+  try {
+    const d=await api(`/search?q=${encodeURIComponent(name)}&type=artist&limit=10`);
+    if(d?.artists?.items?.length) d.artists.items.forEach(a=>{if(!names.includes(a.name))names.push(a.name);});
+  } catch(e){}
+  return names;
+}
+
+/* Match helpers */
+function norm(s){return s.toLowerCase().replace(/[''`]/g,"'").replace(/[^\w\s']/g,' ').replace(/\s+/g,' ').trim();}
+function normC(s){return norm(s).replace(/\s/g,'');}
+
+function titleOk(qTitle,rName){
+  const nq=norm(qTitle),nr=norm(rName);
+  if(nq===nr||nr.startsWith(nq)) return true;
+  const words=nq.split(' ').filter(w=>w.length>2);
+  return words.length>0 && words.filter(w=>nr.includes(w)).length/words.length>=0.7;
+}
+function artistOk(qArtist,rArtists,candidates){
+  const qc=normC(qArtist);
+  const allCands=[...candidates].map(normC);
+  return rArtists.some(a=>{
+    const ac=normC(a);
+    return ac===qc||ac.includes(qc)||qc.includes(ac)||allCands.some(cc=>ac===cc||ac.includes(cc)||cc.includes(ac));
+  });
+}
+
+/* Search track */
+async function searchTrack(line) {
+  const di=line.indexOf(' - ');
+  const tq=di>-1?line.substring(0,di).trim():line.trim();
+  const aq=di>-1?line.substring(di+3).trim():null;
+  const cands=aq?await resolveArtist(aq):[];
+  const queries=[];
+  if(cands.length){cands.forEach(a=>queries.push(`track:${tq} artist:${a}`));cands.forEach(a=>queries.push(`${tq} ${a}`));}
+  queries.push(tq);
+  for(const q of queries){
+    let d; try{d=await api(`/search?q=${encodeURIComponent(q)}&type=track&limit=10`);}catch(e){continue;}
+    if(!d?.tracks?.items?.length) continue;
+    for(const t of d.tracks.items){
+      if(!titleOk(tq,t.name)) continue;
+      if(aq&&!artistOk(aq,t.artists.map(a=>a.name),cands)) continue;
+      return {uri:t.uri,name:t.name,artist:t.artists.map(a=>a.name).join(', ')};
+    }
+  }
+  return null;
+}
+
+/* Tab switching */
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',(i===0&&tab==='new')||(i===1&&tab==='existing')));
+  g('tab-new').classList.toggle('on',tab==='new');
+  g('tab-existing').classList.toggle('on',tab==='existing');
+  hideResults();
+}
+
+/* Action selection */
+function selectAction(action) {
+  currentAction=action;
+  g('btn-act-add').className='action-btn'+(action==='add'?' sel-add':'');
+  g('btn-act-dedup').className='action-btn'+(action==='dedup'?' sel-dedup':'');
+  g('pane-add').classList.toggle('on',action==='add');
+  g('pane-dedup').classList.toggle('on',action==='dedup');
+  g('dedup-preview').innerHTML=''; g('btn-exec').style.display='none'; g('dedup-status').innerHTML='';
+  hideResults();
+}
+
+/* Create new */
+async function createNew() {
+  const name=g('new-name').value.trim();
+  if(!name){st('new-status','플레이리스트 이름을 입력해주세요.','error');return;}
+  const lines=g('new-tracks').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(!lines.length){st('new-status','곡 목록을 입력해주세요.','error');return;}
+  const btn=g('btn-new'); btn.disabled=true; btn.textContent='생성 중...';
+  showResults('새 플레이리스트 생성');
+  st('new-status','처리 중...','info');
+  try {
+    const pl=await api('/me/playlists',{method:'POST',body:JSON.stringify({name,description:'Created with Playlist Creator',public:true})});
+    if(!pl?.id){st('new-status','플레이리스트 생성 실패','error');btn.disabled=false;btn.textContent='플레이리스트 생성';return;}
+    const {uris,failed}=await processLines(lines);
+    if(uris.length){
+      const ar=await fetch(`https://api.spotify.com/v1/playlists/${pl.id}/items`,{method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({uris})});
+      if(!ar.ok){const e=await ar.json().catch(()=>({}));st('new-status',`트랙 추가 실패 (${ar.status}): ${e.error?.message||''}`, 'error');btn.disabled=false;btn.textContent='플레이리스트 생성';return;}
+    }
+    st('new-status',`완료! ${uris.length}/${lines.length}곡 추가됐어요.${failed.length?` (${failed.length}곡 불일치)`:''}`,'success');
+    showFailed(failed);
+    g('result-link').innerHTML=spotifyLink(pl.external_urls.spotify);
+    g('reset-wrap').style.display='block';
+    await loadPlaylists();
+  } catch(e){st('new-status','오류: '+e.message,'error');}
+  btn.disabled=false; btn.textContent='플레이리스트 생성';
+}
+
+/* Add to existing */
+async function addToExisting() {
+  const pid=g('pl-select').value;
+  if(!pid){st('add-status','플레이리스트를 선택해주세요.','error');return;}
+  const lines=g('add-tracks').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(!lines.length){st('add-status','곡 목록을 입력해주세요.','error');return;}
+  const btn=g('btn-add'); btn.disabled=true; btn.textContent='추가 중...';
+  showResults('기존 플레이리스트에 곡 추가');
+  st('add-status','처리 중...','info');
+  try {
+    const {uris,failed}=await processLines(lines);
+    if(uris.length){
+      const ar=await fetch(`https://api.spotify.com/v1/playlists/${pid}/items`,{method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({uris})});
+      if(!ar.ok){const e=await ar.json().catch(()=>({}));st('add-status',`트랙 추가 실패 (${ar.status}): ${e.error?.message||''}`, 'error');btn.disabled=false;btn.textContent='곡 추가하기';return;}
+    }
+    st('add-status',`완료! ${uris.length}/${lines.length}곡 추가됐어요.${failed.length?` (${failed.length}곡 불일치)`:''}`,'success');
+    showFailed(failed);
+    g('reset-wrap').style.display='block';
+    await loadPlaylists();
+  } catch(e){st('add-status','오류: '+e.message,'error');}
+  btn.disabled=false; btn.textContent='곡 추가하기';
+}
+
+/* Process lines */
+async function processLines(lines) {
+  const rc=g('track-results'), uris=[], failed=[], sr=[], fr=[];
+  for(let i=0;i<lines.length;i++){
+    const line=lines[i], result=await searchTrack(line);
+    setProgress(i+1,lines.length);
+    const row=document.createElement('div'); row.className='track-row';
+    if(result){
+      uris.push(result.uri);
+      row.innerHTML=`<span class="track-num">${i+1}</span><div class="track-info"><div class="track-name">${esc(line)}</div><div class="track-sub">${esc(result.name)} — ${esc(result.artist)}</div></div><div class="track-badge ok">✓</div>`;
+      sr.push(row);
+    } else {
+      failed.push(line);
+      row.innerHTML=`<span class="track-num" style="color:var(--danger)">${i+1}</span><div class="track-info"><div class="track-name" style="color:var(--text-muted)">${esc(line)}</div><div class="track-sub err">일치하는 곡 없음</div></div><div class="track-badge fail">✗</div>`;
+      fr.push(row);
+    }
+    await wait(150);
+  }
+  if(sr.length){rc.appendChild(lbl(`추가 성공 — ${sr.length}곡`,'ok'));sr.forEach(r=>rc.appendChild(r));}
+  if(fr.length){rc.appendChild(mkDiv());rc.appendChild(lbl(`추가 실패 — ${fr.length}곡`,'fail'));fr.forEach(r=>rc.appendChild(r));}
+  return {uris,failed};
+}
+
+/* Scan duplicates */
+async function scanDups() {
+  const pid=g('pl-select').value;
+  if(!pid){st('dedup-status','플레이리스트를 선택해주세요.','error');return;}
+  const btn=g('btn-scan'); btn.disabled=true; btn.textContent='스캔 중...';
+  g('dedup-preview').innerHTML=''; g('btn-exec').style.display='none';
+  st('dedup-status','트랙 목록 불러오는 중...','info');
+  try {
+    const items=await fetchAllItems(pid);
+    const seen={}, dups=[];
+    items.forEach((item,idx)=>{
+      if(!item.track?.uri) return;
+      const uri=item.track.uri;
+      if(seen[uri]!==undefined) dups.push({idx,uri,name:item.track.name,artist:(item.track.artists||[]).map(a=>a.name).join(', ')});
+      else seen[uri]=idx;
+    });
+    dupList=dups;
+    if(!dups.length){st('dedup-status',`중복 곡 없음 — 총 ${items.length}곡 모두 고유해요.`,'success');btn.disabled=false;btn.textContent='중복 곡 스캔';return;}
+    st('dedup-status',`중복 ${dups.length}곡 발견 — 첫 번째 항목은 유지되고 나머지가 제거됩니다.`,'warning');
+    const prev=g('dedup-preview');
+    const lbEl=document.createElement('div'); lbEl.className='section-label fail'; lbEl.style.marginTop='12px'; lbEl.textContent=`제거될 곡 목록 (${dups.length}곡)`;
+    prev.appendChild(lbEl);
+    dups.forEach(d=>{
+      const el=document.createElement('div'); el.className='dup-item';
+      el.innerHTML=`<span class="dup-badge">중복</span><div class="track-info"><div class="track-name">${esc(d.name)}</div><div class="track-sub">${esc(d.artist)}</div></div>`;
+      prev.appendChild(el);
+    });
+    g('btn-exec').style.display='block';
+  } catch(e){st('dedup-status','오류: '+e.message,'error');}
+  btn.disabled=false; btn.textContent='중복 곡 스캔';
+}
+
+/* Execute dedup */
+async function execDedup() {
+  const pid=g('pl-select').value;
+  if(!dupList.length) return;
+  const btn=g('btn-exec'); btn.disabled=true; btn.textContent='제거 중...';
+  st('dedup-status',`${dupList.length}곡 제거 중...`,'info');
+  try {
+    const sorted=[...dupList].sort((a,b)=>b.idx-a.idx);
+    for(const d of sorted){
+      await fetch(`https://api.spotify.com/v1/playlists/${pid}/tracks`,{method:'DELETE',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({tracks:[{uri:d.uri,positions:[d.idx]}]})});
+      await wait(120);
+    }
+    st('dedup-status',`완료! ${dupList.length}곡의 중복을 제거했어요.`,'success');
+    g('dedup-preview').innerHTML=''; btn.style.display='none'; dupList=[];
+    await loadPlaylists();
+  } catch(e){st('dedup-status','오류: '+e.message,'error');}
+  btn.disabled=false; btn.textContent='중복 제거 실행';
+}
+
+async function fetchAllItems(pid) {
+  let url=`/playlists/${pid}/items?limit=100&fields=next,items(track(uri,name,artists(name)))`, items=[];
+  while(url){const d=await api(url.startsWith('http')?url.replace('https://api.spotify.com/v1',''):url);items=[...items,...(d.items||[])];url=d.next?d.next.replace('https://api.spotify.com/v1',''):null;}
+  return items;
+}
+
+/* UI helpers */
+function showResults(title) {
+  g('results-title').textContent=title; g('results-card').style.display='block';
+  g('track-results').innerHTML=''; g('failed-summary').innerHTML=''; g('result-link').innerHTML=''; g('reset-wrap').style.display='none';
+  setProgress(0,1);
+}
+function hideResults(){g('results-card').style.display='none';}
+function resetResults(){
+  hideResults();
+  ['new-name','new-tracks','add-tracks'].forEach(id=>{const el=g(id);if(el)el.value='';});
+  ['new-status','add-status'].forEach(id=>st(id,'',''));
+}
+function setProgress(done,total){
+  const pct=total>0?Math.round(done/total*100):0;
+  g('prog-fill').style.width=pct+'%'; g('prog-pct').textContent=pct+'%';
+  g('prog-text').textContent=done<total?`검색 중... (${done}/${total})`:'검색 완료';
+}
+function showFailed(failed){
+  if(!failed.length) return;
+  g('failed-summary').innerHTML=`<div class="status warning" style="margin-top:16px;"><strong>추가하지 못한 곡 (${failed.length}곡)</strong> — 곡명·아티스트를 수정 후 재시도해보세요.<ul class="failed-list">${failed.map(l=>`<li>${esc(l)}</li>`).join('')}</ul></div>`;
+}
+function spotifyLink(url){return `<a class="spotify-link" href="${url}" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.623.623 0 01-.857.207c-2.348-1.435-5.304-1.76-8.785-.963a.623.623 0 11-.277-1.215c3.809-.87 7.076-.496 9.712 1.115a.623.623 0 01.207.856zm1.223-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 01-.973-.519.781.781 0 01.52-.972c3.632-1.102 8.147-.568 11.233 1.328a.78.78 0 01.257 1.072zm.105-2.835C14.692 8.95 9.375 8.775 6.297 9.71a.937.937 0 11-.543-1.793c3.514-1.066 9.35-.859 13.032 1.328a.937.937 0 01-.972 1.622z"/></svg>Spotify에서 열기</a>`;}
+
+function st(id,msg,type){const el=g(id);if(el)el.innerHTML=msg?`<div class="status ${type}">${msg}</div>`:'';}
+function lbl(text,cls){const d=document.createElement('div');d.className=`section-label ${cls}`;d.textContent=text;return d;}
+function mkDiv(){const d=document.createElement('div');d.className='divider';return d;}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function wait(ms){return new Promise(r=>setTimeout(r,ms));}
+function g(id){return document.getElementById(id);}
+
+initTheme();
+loadSaved();
+g('auth-section').classList.add('on');
+</script>
+</body>
+</html>
